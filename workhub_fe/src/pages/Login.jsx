@@ -6,6 +6,7 @@ import axios from 'axios';
 function Login() {
   const navigate = useNavigate();
   const [isLogin, setIsLogin] = useState(true);
+  const [userType, setUserType] = useState('candidate'); // 'candidate' hoặc 'recruiter'
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -15,26 +16,50 @@ function Login() {
 
   const loginMutation = useMutation({
     mutationFn: (data) => {
-      return axios.post('http://localhost:3000/api/auth/login', data);
+      const endpoint = userType === 'candidate' 
+        ? 'http://localhost:8080/workhub/api/v1/candidate/login'
+        : 'http://localhost:8080/workhub/api/v1/recruiter/login';
+      
+      return axios.post(endpoint, null, {
+        params: {
+          email: data.email,
+          password: data.password
+        }
+      });
     },
     onSuccess: (data) => {
-      localStorage.setItem('token', data.data.token);
+      localStorage.setItem('token', data.data);
+      localStorage.setItem('userType', userType);
       navigate('/');
     },
     onError: (error) => {
       console.error('Login failed:', error);
+      alert('Đăng nhập thất bại. Vui lòng kiểm tra lại email và mật khẩu.');
     }
   });
 
   const registerMutation = useMutation({
     mutationFn: (data) => {
-      return axios.post('http://localhost:3000/api/auth/register', data);
+      const endpoint = userType === 'candidate'
+        ? 'http://localhost:8080/workhub/api/v1/candidate/register'
+        : 'http://localhost:8080/workhub/api/v1/recruiter/register';
+      
+      return axios.post(endpoint, {
+        fullName: data.fullName,
+        email: data.email
+      }, {
+        params: {
+          password: data.password
+        }
+      });
     },
     onSuccess: () => {
+      alert('Đăng ký thành công! Vui lòng kiểm tra email để kích hoạt tài khoản.');
       setIsLogin(true);
     },
     onError: (error) => {
       console.error('Registration failed:', error);
+      alert('Đăng ký thất bại. Vui lòng thử lại sau.');
     }
   });
 
@@ -98,6 +123,31 @@ function Login() {
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
         <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
+          <div className="mb-6">
+            <div className="flex space-x-4">
+              <button
+                onClick={() => setUserType('candidate')}
+                className={`flex-1 py-2 px-4 rounded-md text-sm font-medium ${
+                  userType === 'candidate'
+                    ? 'bg-primary text-white'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                Ứng viên
+              </button>
+              <button
+                onClick={() => setUserType('recruiter')}
+                className={`flex-1 py-2 px-4 rounded-md text-sm font-medium ${
+                  userType === 'recruiter'
+                    ? 'bg-primary text-white'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                Nhà tuyển dụng
+              </button>
+            </div>
+          </div>
+
           <form className="space-y-6" onSubmit={handleSubmit}>
             {!isLogin && (
               <div>
