@@ -4,13 +4,15 @@ package gr3.workhub.dto;
 import java.time.LocalDateTime;
 
 public class AppliedJobsDTO {
+    private Integer jobId;
     private String jobTitle;
     private String salaryRange;
     private byte[] resumeFile;
     private String status;
     private LocalDateTime appliedAt;
 
-    public AppliedJobsDTO(String jobTitle, String salaryRange, byte[] resumeFile, String status, LocalDateTime appliedAt) {
+    public AppliedJobsDTO(Integer jobId, String jobTitle, String salaryRange, byte[] resumeFile, String status, LocalDateTime appliedAt) {
+        this.jobId = jobId;
         this.jobTitle = jobTitle;
         this.salaryRange = salaryRange;
         this.resumeFile = resumeFile;
@@ -19,6 +21,9 @@ public class AppliedJobsDTO {
     }
 
     // Getters and setters
+    public Integer getJobId() { return jobId; }
+    public void setJobId(Integer jobId) { this.jobId = jobId; }
+
     public String getJobTitle() { return jobTitle; }
     public void setJobTitle(String jobTitle) { this.jobTitle = jobTitle; }
 

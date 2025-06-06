@@ -77,6 +77,7 @@ public class ApplicationService {
         List<Application> applications = applicationRepository.findByCandidateId(userId);
         return applications.stream()
                 .map(app -> new AppliedJobsDTO(
+                        app.getJob().getId(),
                         app.getJob().getTitle(),
                         app.getJob().getSalaryRange(),
                         app.getResume().getFile(),

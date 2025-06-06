@@ -57,12 +57,7 @@ public class ResumeService {
     }
 
     public void deleteResume(Integer resumeId, Integer userId) {
-        // Ensure only user with userId = 1 can delete resumes
-        if (!userId.equals(1)) {
-            throw new IllegalArgumentException("Only the user with ID 1 can delete resumes");
-        }
-
-        // Validate resume existence
+        // Validate resume existence and ownership
         Resume resume = resumeRepository.findByIdAndUser_Id(resumeId, userId)
                 .orElseThrow(() -> new IllegalArgumentException("Resume not found or unauthorized"));
 
