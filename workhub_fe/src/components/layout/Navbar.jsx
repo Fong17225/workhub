@@ -1,100 +1,206 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
-import { Menu, X, Search } from '@mui/icons-material';
+import { Link, useNavigate } from 'react-router-dom';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import axios from 'axios';
+import MenuIcon from '@mui/icons-material/Menu';
+import CloseIcon from '@mui/icons-material/Close';
+import SearchIcon from '@mui/icons-material/Search';
+import AccountCircleIcon from '@mui/icons-material/AccountCircle';
+import LogoutIcon from '@mui/icons-material/Logout';
 
-const Navbar = () => {
+function Navbar() {
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+
+  const { data: user, isLoading } = useQuery({
+    queryKey: ['profile'],
+    queryFn: async () => {
+      try {
+        const response = await axios.get('http://localhost:8080/workhub/api/v1/me', {
+          withCredentials: true
+        });
+        return response.data;
+      } catch (error) {
+        return null;
+      }
+    }
+  });
+
+  const handleLogout = async () => {
+    try {
+      await axios.post('http://localhost:8080/workhub/api/v1/logout', {}, {
+        withCredentials: true
+      });
+      queryClient.setQueryData(['profile'], null);
+      setIsDropdownOpen(false);
+      navigate('/');
+    } catch (error) {
+      console.error('Logout failed:', error);
+    }
+  };
 
   return (
-    <nav className="bg-white shadow-md">
+    <nav className="bg-white shadow">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16">
-          <div className="flex items-center">
-            <Link to="/" className="flex-shrink-0 flex items-center">
-              <span className="text-2xl font-bold text-primary">WorkHub</span>
-            </Link>
-          </div>
-
-          {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center space-x-8">
-            <Link to="/jobs" className="text-gray-700 hover:text-primary">
-              Tìm việc
-            </Link>
-            <Link to="/companies" className="text-gray-700 hover:text-primary">
-              Công ty
-            </Link>
-            <Link to="/resources" className="text-gray-700 hover:text-primary">
-              Tài nguyên
-            </Link>
-            <div className="relative">
-              <input
-                type="text"
-                placeholder="Tìm kiếm..."
-                className="pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-              />
-              <Search className="absolute left-3 top-2.5 text-gray-400" />
+          <div className="flex">
+            <div className="flex-shrink-0 flex items-center">
+              <Link to="/" className="text-2xl font-bold text-primary">
+                WorkHub
+              </Link>
             </div>
-            <Link
-              to="/login"
-              className="bg-primary text-white px-4 py-2 rounded-lg hover:bg-primary/90"
-            >
-              Đăng nhập
-            </Link>
+            <div className="hidden sm:ml-6 sm:flex sm:space-x-8">
+              <Link
+                to="/jobs"
+                className="border-transparent text-gray-500 hover:border-primary hover:text-primary inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium"
+              >
+                Tìm việc
+              </Link>
+              <Link
+                to="/companies"
+                className="border-transparent text-gray-500 hover:border-primary hover:text-primary inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium"
+              >
+                Công ty
+              </Link>
+              <Link
+                to="/resources"
+                className="border-transparent text-gray-500 hover:border-primary hover:text-primary inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium"
+              >
+                Tài nguyên
+              </Link>
+            </div>
           </div>
-
-          {/* Mobile menu button */}
-          <div className="md:hidden flex items-center">
+          <div className="hidden sm:ml-6 sm:flex sm:items-center">
+            <div className="flex-shrink-0">
+              <div className="relative">
+                <input
+                  type="text"
+                  placeholder="Tìm kiếm việc làm..."
+                  className="w-64 pl-10 pr-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                />
+                <SearchIcon className="absolute left-3 top-2.5 text-gray-400" />
+              </div>
+            </div>
+            <div className="ml-4 relative">
+              {!isLoading && user ? (
+                <div className="relative">
+                  <button
+                    onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                    className="flex items-center space-x-2 text-gray-700 hover:text-primary focus:outline-none"
+                  >
+                    <AccountCircleIcon className="h-8 w-8" />
+                    <span className="text-sm font-medium">{user.fullName}</span>
+                  </button>
+                  {isDropdownOpen && (
+                    <div className="absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5">
+                      <div className="py-1">
+                        <Link
+                          to="/profile"
+                          className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                        >
+                          Hồ sơ
+                        </Link>
+                        <Link
+                          to="/settings"
+                          className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                        >
+                          Cài đặt
+                        </Link>
+                        <button
+                          onClick={handleLogout}
+                          className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center"
+                        >
+                          <LogoutIcon className="h-4 w-4 mr-2" />
+                          Đăng xuất
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <Link
+                  to="/login"
+                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-primary hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
+                >
+                  Đăng nhập
+                </Link>
+              )}
+            </div>
+          </div>
+          <div className="-mr-2 flex items-center sm:hidden">
             <button
               onClick={() => setIsMenuOpen(!isMenuOpen)}
-              className="text-gray-700 hover:text-primary"
+              className="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-primary"
             >
-              {isMenuOpen ? <X /> : <Menu />}
+              <span className="sr-only">Open main menu</span>
+              {isMenuOpen ? (
+                <CloseIcon className="block h-6 w-6" />
+              ) : (
+                <MenuIcon className="block h-6 w-6" />
+              )}
             </button>
           </div>
         </div>
       </div>
 
-      {/* Mobile Navigation */}
       {isMenuOpen && (
-        <div className="md:hidden">
-          <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3">
+        <div className="sm:hidden">
+          <div className="pt-2 pb-3 space-y-1">
             <Link
               to="/jobs"
-              className="block px-3 py-2 text-gray-700 hover:text-primary"
+              className="block pl-3 pr-4 py-2 border-l-4 border-transparent text-base font-medium text-gray-600 hover:bg-gray-50 hover:border-primary hover:text-primary"
             >
               Tìm việc
             </Link>
             <Link
               to="/companies"
-              className="block px-3 py-2 text-gray-700 hover:text-primary"
+              className="block pl-3 pr-4 py-2 border-l-4 border-transparent text-base font-medium text-gray-600 hover:bg-gray-50 hover:border-primary hover:text-primary"
             >
               Công ty
             </Link>
             <Link
               to="/resources"
-              className="block px-3 py-2 text-gray-700 hover:text-primary"
+              className="block pl-3 pr-4 py-2 border-l-4 border-transparent text-base font-medium text-gray-600 hover:bg-gray-50 hover:border-primary hover:text-primary"
             >
               Tài nguyên
             </Link>
-            <div className="relative px-3 py-2">
-              <input
-                type="text"
-                placeholder="Tìm kiếm..."
-                className="w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-              />
-              <Search className="absolute left-6 top-4 text-gray-400" />
-            </div>
-            <Link
-              to="/login"
-              className="block px-3 py-2 text-white bg-primary rounded-lg hover:bg-primary/90"
-            >
-              Đăng nhập
-            </Link>
+            {!isLoading && user ? (
+              <>
+                <Link
+                  to="/profile"
+                  className="block pl-3 pr-4 py-2 border-l-4 border-transparent text-base font-medium text-gray-600 hover:bg-gray-50 hover:border-primary hover:text-primary"
+                >
+                  Hồ sơ
+                </Link>
+                <Link
+                  to="/settings"
+                  className="block pl-3 pr-4 py-2 border-l-4 border-transparent text-base font-medium text-gray-600 hover:bg-gray-50 hover:border-primary hover:text-primary"
+                >
+                  Cài đặt
+                </Link>
+                <button
+                  onClick={handleLogout}
+                  className="w-full text-left pl-3 pr-4 py-2 border-l-4 border-transparent text-base font-medium text-gray-600 hover:bg-gray-50 hover:border-primary hover:text-primary flex items-center"
+                >
+                  <LogoutIcon className="h-5 w-5 mr-2" />
+                  Đăng xuất
+                </button>
+              </>
+            ) : (
+              <Link
+                to="/login"
+                className="block pl-3 pr-4 py-2 border-l-4 border-transparent text-base font-medium text-gray-600 hover:bg-gray-50 hover:border-primary hover:text-primary"
+              >
+                Đăng nhập
+              </Link>
+            )}
           </div>
         </div>
       )}
     </nav>
   );
-};
+}
 
 export default Navbar; 
