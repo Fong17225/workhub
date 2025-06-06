@@ -1,7 +1,33 @@
 import { Link } from 'react-router-dom';
 import { Search, Work, Business, School } from '@mui/icons-material';
+import { useQuery } from '@tanstack/react-query';
+import axios from 'axios';
+import { 
+  BriefcaseIcon, 
+  BuildingOfficeIcon, 
+  MapPinIcon, 
+  CurrencyDollarIcon,
+  ClockIcon,
+  CalendarIcon,
+  TagIcon
+} from '@heroicons/react/24/outline';
 
 const Home = () => {
+  const { data: allJobs, isLoading, isError } = useQuery({
+    queryKey: ['allJobs'],
+    queryFn: async () => {
+      const response = await axios.get('http://localhost:8080/workhub/api/v1/jobs');
+      // Shuffle and take the first 5 jobs
+      return response.data.sort(() => 0.5 - Math.random()).slice(0, 3);
+    },
+  });
+
+  const featuredJobs = allJobs; // Rename for clarity in JSX
+
+  if (isError) {
+    return <div className="text-center text-red-500">Lỗi khi tải dữ liệu việc làm.</div>;
+  }
+
   return (
     <div className="min-h-screen">
       {/* Hero Section */}
@@ -60,48 +86,90 @@ const Home = () => {
         </div>
       </section>
 
-      {/* Popular Jobs Section */}
+      {/* Featured Jobs Section */}
       <section className="py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <h2 className="text-3xl font-bold mb-8">Việc làm nổi bật</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {/* Job Card */}
-            <div className="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow">
-              <div className="flex items-center mb-4">
-                <img
-                  src="https://via.placeholder.com/50"
-                  alt="Company Logo"
-                  className="w-12 h-12 rounded-lg"
-                />
-                <div className="ml-4">
-                  <h3 className="font-semibold">Senior Frontend Developer</h3>
-                  <p className="text-gray-600">Tech Company</p>
+          {isLoading ? (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {[...Array(5)].map((_, i) => (
+                <div key={i} className="bg-white p-6 rounded-lg shadow-md animate-pulse">
+                  <div className="h-4 bg-gray-200 rounded w-3/4 mb-4"></div>
+                  <div className="space-y-3">
+                    <div className="h-4 bg-gray-200 rounded"></div>
+                    <div className="h-4 bg-gray-200 rounded w-5/6"></div>
+                  </div>
                 </div>
-              </div>
-              <div className="flex items-center text-gray-600 mb-4">
-                <span className="mr-4">Hà Nội</span>
-                <span>30-40M</span>
-              </div>
-              <div className="flex flex-wrap gap-2 mb-4">
-                <span className="bg-gray-100 text-gray-700 px-3 py-1 rounded-full text-sm">
-                  React
-                </span>
-                <span className="bg-gray-100 text-gray-700 px-3 py-1 rounded-full text-sm">
-                  TypeScript
-                </span>
-                <span className="bg-gray-100 text-gray-700 px-3 py-1 rounded-full text-sm">
-                  Tailwind
-                </span>
-              </div>
-              <Link
-                to="/jobs/1"
-                className="text-primary hover:text-primary/80 font-medium"
-              >
-                Xem chi tiết →
-              </Link>
+              ))}
             </div>
-            {/* Repeat Job Card structure for more jobs */}
-          </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {featuredJobs?.map((job) => (
+                <div key={job.id} className="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <h3 className="text-lg font-medium text-gray-900">
+                        <Link to={`/jobs/${job.id}`} className="hover:text-primary">
+                          {job.title}
+                        </Link>
+                      </h3>
+                      {/* <div className="mt-2 flex items-center text-sm text-gray-500">
+                        <BuildingOfficeIcon className="flex-shrink-0 mr-1.5 h-5 w-5 text-gray-400" />
+                        {job.recruiter?.companyName}
+                      </div> */}
+                    </div>
+                    {/* Check if job.postAt is 'urgent' and display badge */}
+                    {job.postAt === 'urgent' && (
+                       <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                        Khẩn cấp
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="mt-4 space-y-2">
+                    <div className="flex items-center text-sm text-gray-500">
+                      <MapPinIcon className="flex-shrink-0 mr-1.5 h-5 w-5 text-gray-400" />
+                      {job.location}
+                    </div>
+                    <div className="flex items-center text-sm text-gray-500">
+                      <CurrencyDollarIcon className="flex-shrink-0 mr-1.5 h-5 w-5 text-gray-400" />
+                      {job.salaryRange}
+                    </div>
+                    <div className="flex items-center text-sm text-gray-500">
+                      <ClockIcon className="flex-shrink-0 mr-1.5 h-5 w-5 text-gray-400" />
+                      {job.type?.name}
+                    </div>
+                  </div>
+
+                  <div className="mt-4">
+                    <div className="flex items-center text-sm text-gray-500 mb-2">
+                      <TagIcon className="flex-shrink-0 mr-1.5 h-5 w-5 text-gray-400" />
+                      <span className="font-medium">Ngành nghề:</span>
+                      <span className="ml-2">{job.category?.name}</span>
+                    </div>
+                  </div>
+
+                  <div className="mt-4 flex items-center justify-between">
+                    <div className="flex items-center text-sm text-gray-500">
+                      <CalendarIcon className="flex-shrink-0 mr-1.5 h-5 w-5 text-gray-400" />
+                      <div>
+                        <div>Đăng: {new Date(job.createdAt).toLocaleDateString('vi-VN')}</div>
+                        {job.deadline && (
+                          <div>Hạn nộp: {new Date(job.deadline).toLocaleDateString('vi-VN')}</div>
+                        )}
+                      </div>
+                    </div>
+                    <Link
+                      to={`/jobs/${job.id}`}
+                      className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-primary hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
+                    >
+                      Xem chi tiết
+                    </Link>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
           <div className="text-center mt-8">
             <Link
               to="/jobs"
