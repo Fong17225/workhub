@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import axios from 'axios';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { 
   BriefcaseIcon, 
   BuildingOfficeIcon, 
@@ -13,6 +13,7 @@ import {
 } from '@heroicons/react/24/outline';
 
 function Jobs() {
+  const location = useLocation();
   const [filters, setFilters] = useState({
     title: '',
     typeId: '',
@@ -24,6 +25,15 @@ function Jobs() {
     skillId: ''
   });
 
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const title = params.get('title') || '';
+    setFilters(prev => ({
+      ...prev,
+      title: title
+    }));
+  }, [location.search]);
+
   const { data: jobs, isLoading, error } = useQuery({
     queryKey: ['jobs', filters],
     queryFn: async () => {
@@ -32,6 +42,39 @@ function Jobs() {
         if (value) params.append(key, value);
       });
       const response = await axios.get(`http://localhost:8080/workhub/api/v1/jobs?${params.toString()}`);
+      return response.data;
+    },
+    enabled: true,
+  });
+
+  const { data: categories, isLoading: isLoadingCategories, isError: isErrorCategories } = useQuery({
+    queryKey: ['jobCategories'],
+    queryFn: async () => {
+      const response = await axios.get('http://localhost:8080/workhub/api/v1/job-categories');
+      return response.data;
+    }
+  });
+
+  const { data: types, isLoading: isLoadingTypes, isError: isErrorTypes } = useQuery({
+    queryKey: ['jobTypes'],
+    queryFn: async () => {
+      const response = await axios.get('http://localhost:8080/workhub/api/v1/job-types');
+      return response.data;
+    }
+  });
+
+  const { data: positions, isLoading: isLoadingPositions, isError: isErrorPositions } = useQuery({
+    queryKey: ['jobPositions'],
+    queryFn: async () => {
+      const response = await axios.get('http://localhost:8080/workhub/api/v1/job-positions');
+      return response.data;
+    }
+  });
+
+  const { data: skills, isLoading: isLoadingSkills, isError: isErrorSkills } = useQuery({
+    queryKey: ['skills'],
+    queryFn: async () => {
+      const response = await axios.get('http://localhost:8080/workhub/api/v1/skill');
       return response.data;
     }
   });
@@ -80,48 +123,68 @@ function Jobs() {
         <h2 className="text-lg font-medium text-gray-900 mb-4">Bộ lọc tìm kiếm</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <div>
-            <label htmlFor="title" className="block text-sm font-medium text-gray-700">Tiêu đề</label>
-            <input
-              type="text"
-              name="title"
-              id="title"
-              value={filters.title}
+            <label htmlFor="categoryId" className="block text-sm font-medium text-gray-700">Ngành nghề</label>
+            <select
+              name="categoryId"
+              id="categoryId"
+              value={filters.categoryId}
               onChange={handleFilterChange}
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm"
-            />
+              disabled={isLoadingCategories || isErrorCategories}
+            >
+              <option value="">Tất cả ngành nghề</option>
+              {categories?.map(category => (
+                <option key={category.id} value={category.id}>{category.name}</option>
+              ))}
+            </select>
           </div>
           <div>
-            <label htmlFor="location" className="block text-sm font-medium text-gray-700">Địa điểm</label>
-            <input
-              type="text"
-              name="location"
-              id="location"
-              value={filters.location}
+            <label htmlFor="typeId" className="block text-sm font-medium text-gray-700">Loại công việc</label>
+            <select
+              name="typeId"
+              id="typeId"
+              value={filters.typeId}
               onChange={handleFilterChange}
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm"
-            />
+              disabled={isLoadingTypes || isErrorTypes}
+            >
+              <option value="">Tất cả loại công việc</option>
+              {types?.map(type => (
+                <option key={type.id} value={type.id}>{type.name}</option>
+              ))}
+            </select>
           </div>
           <div>
-            <label htmlFor="minSalary" className="block text-sm font-medium text-gray-700">Lương tối thiểu</label>
-            <input
-              type="number"
-              name="minSalary"
-              id="minSalary"
-              value={filters.minSalary}
+            <label htmlFor="positionId" className="block text-sm font-medium text-gray-700">Vị trí công việc</label>
+            <select
+              name="positionId"
+              id="positionId"
+              value={filters.positionId}
               onChange={handleFilterChange}
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm"
-            />
+              disabled={isLoadingPositions || isErrorPositions}
+            >
+              <option value="">Tất cả vị trí</option>
+              {positions?.map(position => (
+                <option key={position.id} value={position.id}>{position.name}</option>
+              ))}
+            </select>
           </div>
           <div>
-            <label htmlFor="maxSalary" className="block text-sm font-medium text-gray-700">Lương tối đa</label>
-            <input
-              type="number"
-              name="maxSalary"
-              id="maxSalary"
-              value={filters.maxSalary}
+            <label htmlFor="skillId" className="block text-sm font-medium text-gray-700">Kỹ năng</label>
+            <select
+              name="skillId"
+              id="skillId"
+              value={filters.skillId}
               onChange={handleFilterChange}
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm"
-            />
+              disabled={isLoadingSkills || isErrorSkills}
+            >
+              <option value="">Tất cả kỹ năng</option>
+              {skills?.map(skill => (
+                <option key={skill.id} value={skill.id}>{skill.name}</option>
+              ))}
+            </select>
           </div>
         </div>
       </div>
@@ -133,14 +196,10 @@ function Jobs() {
             <div className="flex items-start justify-between">
               <div>
                 <h3 className="text-lg font-medium text-gray-900">
-                  <Link to={`/jobs/detail/${job.id}`} className="hover:text-primary">
+                  <Link to={`/jobs/${job.id}`} className="hover:text-primary">
                     {job.title}
                   </Link>
                 </h3>
-                <div className="mt-2 flex items-center text-sm text-gray-500">
-                  <BuildingOfficeIcon className="flex-shrink-0 mr-1.5 h-5 w-5 text-gray-400" />
-                  {job.recruiter?.companyName}
-                </div>
               </div>
               <div className="flex items-center">
                 <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
@@ -156,45 +215,26 @@ function Jobs() {
             </div>
 
             <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-              {/* <div className="flex items-center text-sm text-gray-500">
-                <BriefcaseIcon className="flex-shrink-0 mr-1.5 h-5 w-5 text-gray-400" />
-                {job.position?.name}
-              </div> */}
               <div className="flex items-center text-sm text-gray-500">
-                <MapPinIcon className="flex-shrink-0 mr-1.5 h-5 w-5 text-gray-400" />
                 {job.location}
               </div>
               <div className="flex items-center text-sm text-gray-500">
-                <CurrencyDollarIcon className="flex-shrink-0 mr-1.5 h-5 w-5 text-gray-400" />
                 {job.salaryRange}
               </div>
               <div className="flex items-center text-sm text-gray-500">
-                <ClockIcon className="flex-shrink-0 mr-1.5 h-5 w-5 text-gray-400" />
                 {job.type?.name}
               </div>
             </div>
 
             <div className="mt-4">
               <div className="flex items-center text-sm text-gray-500 mb-2">
-                <TagIcon className="flex-shrink-0 mr-1.5 h-5 w-5 text-gray-400" />
                 <span className="font-medium">Ngành nghề:</span>
                 <span className="ml-2">{job.category?.name}</span>
               </div>
-              {/* <div className="flex flex-wrap gap-2">
-                {job.skills?.map((skill) => (
-                  <span
-                    key={skill.id}
-                    className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800"
-                  >
-                    {skill.name}
-                  </span>
-                ))}
-              </div> */}
             </div>
 
             <div className="mt-4 flex items-center justify-between">
               <div className="flex items-center text-sm text-gray-500">
-                <CalendarIcon className="flex-shrink-0 mr-1.5 h-5 w-5 text-gray-400" />
                 <div>
                   <div>Đăng: {new Date(job.createdAt).toLocaleDateString('vi-VN')}</div>
                   {job.deadline && (

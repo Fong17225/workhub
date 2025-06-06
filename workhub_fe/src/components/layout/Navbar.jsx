@@ -13,6 +13,7 @@ function Navbar() {
   const queryClient = useQueryClient();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
 
   const { data: user, isLoading } = useQuery({
     queryKey: ['profile'],
@@ -38,6 +39,12 @@ function Navbar() {
       navigate('/');
     } catch (error) {
       console.error('Logout failed:', error);
+    }
+  };
+
+  const handleSearch = (e) => {
+    if (e.key === 'Enter' && searchQuery.trim() !== '') {
+      navigate(`/jobs?title=${encodeURIComponent(searchQuery.trim())}`);
     }
   };
 
@@ -78,6 +85,9 @@ function Navbar() {
                 <input
                   type="text"
                   placeholder="Tìm kiếm việc làm..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onKeyPress={handleSearch}
                   className="w-64 pl-10 pr-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
                 />
                 <SearchIcon className="absolute left-3 top-2.5 text-gray-400" />
@@ -94,17 +104,19 @@ function Navbar() {
                     <span className="text-sm font-medium">{user.fullName}</span>
                   </button>
                   {isDropdownOpen && (
-                    <div className="absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5">
+                    <div className="absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-10">
                       <div className="py-1">
                         <Link
                           to="/profile"
                           className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                          onClick={() => setIsDropdownOpen(false)}
                         >
                           Hồ sơ
                         </Link>
                         <Link
                           to="/settings"
                           className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                          onClick={() => setIsDropdownOpen(false)}
                         >
                           Cài đặt
                         </Link>
@@ -151,18 +163,21 @@ function Navbar() {
             <Link
               to="/jobs"
               className="block pl-3 pr-4 py-2 border-l-4 border-transparent text-base font-medium text-gray-600 hover:bg-gray-50 hover:border-primary hover:text-primary"
+              onClick={() => setIsMenuOpen(false)}
             >
               Tìm việc
             </Link>
             <Link
               to="/companies"
               className="block pl-3 pr-4 py-2 border-l-4 border-transparent text-base font-medium text-gray-600 hover:bg-gray-50 hover:border-primary hover:text-primary"
+              onClick={() => setIsMenuOpen(false)}
             >
               Công ty
             </Link>
             <Link
               to="/resources"
               className="block pl-3 pr-4 py-2 border-l-4 border-transparent text-base font-medium text-gray-600 hover:bg-gray-50 hover:border-primary hover:text-primary"
+              onClick={() => setIsMenuOpen(false)}
             >
               Tài nguyên
             </Link>
@@ -171,12 +186,14 @@ function Navbar() {
                 <Link
                   to="/profile"
                   className="block pl-3 pr-4 py-2 border-l-4 border-transparent text-base font-medium text-gray-600 hover:bg-gray-50 hover:border-primary hover:text-primary"
+                  onClick={() => setIsMenuOpen(false)}
                 >
                   Hồ sơ
                 </Link>
                 <Link
                   to="/settings"
                   className="block pl-3 pr-4 py-2 border-l-4 border-transparent text-base font-medium text-gray-600 hover:bg-gray-50 hover:border-primary hover:text-primary"
+                  onClick={() => setIsMenuOpen(false)}
                 >
                   Cài đặt
                 </Link>
@@ -192,6 +209,7 @@ function Navbar() {
               <Link
                 to="/login"
                 className="block pl-3 pr-4 py-2 border-l-4 border-transparent text-base font-medium text-gray-600 hover:bg-gray-50 hover:border-primary hover:text-primary"
+                onClick={() => setIsMenuOpen(false)}
               >
                 Đăng nhập
               </Link>

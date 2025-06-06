@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Search, Work, Business, School } from '@mui/icons-material';
 import { useQuery } from '@tanstack/react-query';
 import axios from 'axios';
@@ -11,8 +11,12 @@ import {
   CalendarIcon,
   TagIcon
 } from '@heroicons/react/24/outline';
+import { useState } from 'react';
 
 const Home = () => {
+  const navigate = useNavigate();
+  const [searchQuery, setSearchQuery] = useState('');
+
   const { data: allJobs, isLoading, isError } = useQuery({
     queryKey: ['allJobs'],
     queryFn: async () => {
@@ -23,6 +27,14 @@ const Home = () => {
   });
 
   const featuredJobs = allJobs; // Rename for clarity in JSX
+
+  const handleSearch = (e) => {
+    if (e.key === 'Enter' || e.type === 'click') {
+      if (searchQuery.trim() !== '') {
+        navigate(`/jobs?title=${encodeURIComponent(searchQuery.trim())}`);
+      }
+    }
+  };
 
   if (isError) {
     return <div className="text-center text-red-500">Lỗi khi tải dữ liệu việc làm.</div>;
@@ -46,9 +58,15 @@ const Home = () => {
                 <input
                   type="text"
                   placeholder="Tìm kiếm việc làm, kỹ năng, công ty..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onKeyPress={handleSearch}
                   className="flex-1 px-4 py-2 focus:outline-none text-gray-900"
                 />
-                <button className="bg-primary text-white px-6 py-2 rounded-lg hover:bg-primary/90">
+                <button 
+                  onClick={handleSearch}
+                  className="bg-primary text-white px-6 py-2 rounded-lg hover:bg-primary/90"
+                >
                   Tìm kiếm
                 </button>
               </div>
