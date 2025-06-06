@@ -54,7 +54,7 @@ function Navbar() {
         <div className="flex justify-between h-16">
           <div className="flex">
             <div className="flex-shrink-0 flex items-center">
-              <Link to="/" className="text-2xl font-bold text-primary">
+              <Link to="/" className="text-3xl font-bold text-primary">
                 WorkHub
               </Link>
             </div>
@@ -100,7 +100,7 @@ function Navbar() {
                     onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                     className="flex items-center space-x-2 text-gray-700 hover:text-primary focus:outline-none"
                   >
-                    <AccountCircleIcon className="h-8 w-8" />
+                    <AccountCircleIcon className="h-12 w-12" />
                     <span className="text-sm font-medium">{user.fullName}</span>
                   </button>
                   {isDropdownOpen && (
