@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:developer' as developer;
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -10,24 +11,22 @@ class HttpException implements Exception {
 }
 
 class ApiService {
-  static const String baseUrl = 'http://10.0.2.2:8080/workhub/api/v1';
-  static const Duration timeout = Duration(seconds: 10);
-  static ApiService? _instance;
+  late final String baseUrl;
+  late final http.Client _client;
+  String? _token;
   SharedPreferences? _prefs;
 
-  ApiService._();
+  ApiService._() {
+    _client = http.Client();
+    // Sử dụng IP của máy tính
+    baseUrl = 'http://192.168.12.171:8080/workhub/api/v1';
+    developer.log('API Service initialized with baseUrl: $baseUrl');
+  }
 
-  static Future<ApiService> getInstance() async {
-    if (_instance == null) {
-      _instance = ApiService._();
-      try {
-        await _instance!._initPrefs();
-      } catch (e) {
-        print('Warning: Could not initialize SharedPreferences: $e');
-        // Tiếp tục mà không có SharedPreferences
-      }
-    }
-    return _instance!;
+  static final ApiService _instance = ApiService._();
+
+  factory ApiService() {
+    return _instance;
   }
 
   Future<void> _initPrefs() async {
@@ -42,7 +41,6 @@ class ApiService {
   Future<Map<String, String>> _getHeaders() async {
     final headers = {
       'Content-Type': 'application/json',
-      'Accept': 'application/json',
     };
 
     try {
@@ -62,102 +60,98 @@ class ApiService {
   Future<dynamic> get(String endpoint, {Map<String, dynamic>? queryParams}) async {
     try {
       final uri = Uri.parse('$baseUrl$endpoint').replace(queryParameters: queryParams);
-      final headers = await _getHeaders();
+      developer.log('GET Request to: $uri');
+      developer.log('Headers: ${await _getHeaders()}');
       
-      print('Making GET request to: ${uri.toString()}');
-      final response = await http.get(uri, headers: headers)
-          .timeout(timeout);
-      print('Response status: ${response.statusCode}');
-      print('Response body: ${response.body}');
-
-      if (response.statusCode >= 200 && response.statusCode < 300) {
-        return json.decode(response.body);
-      } else {
-        throw HttpException('Request failed with status: ${response.statusCode}');
-      }
-    } catch (e) {
-      print('Error in GET request: $e');
-      throw HttpException('Network error: $e');
-    }
-  }
-
-  Future<dynamic> post(String endpoint, {Map<String, dynamic>? body}) async {
-    try {
-      final uri = Uri.parse('$baseUrl$endpoint');
-      final headers = await _getHeaders();
-      
-      print('Making POST request to: ${uri.toString()}');
-      print('Request body: ${json.encode(body)}');
-      
-      final response = await http.post(
+      final response = await _client.get(
         uri,
-        headers: headers,
-        body: json.encode(body),
-      ).timeout(timeout);
+        headers: await _getHeaders(),
+      ).timeout(const Duration(seconds: 30));
       
-      print('Response status: ${response.statusCode}');
-      print('Response body: ${response.body}');
-
-      if (response.statusCode >= 200 && response.statusCode < 300) {
-        return json.decode(response.body);
-      } else {
-        throw HttpException('Request failed with status: ${response.statusCode}');
-      }
+      developer.log('Response status: ${response.statusCode}');
+      developer.log('Response body: ${response.body}');
+      
+      return _handleResponse(response);
     } catch (e) {
-      print('Error in POST request: $e');
-      throw HttpException('Network error: $e');
+      developer.log('GET Error: $e');
+      throw Exception('Network error: $e');
     }
   }
 
-  Future<dynamic> put(String endpoint, {Map<String, dynamic>? body}) async {
+  Future<dynamic> post(String endpoint, {required Map<String, dynamic> body}) async {
     try {
       final uri = Uri.parse('$baseUrl$endpoint');
-      final headers = await _getHeaders();
+      developer.log('POST Request to: $uri');
+      developer.log('Headers: ${await _getHeaders()}');
+      developer.log('Body: $body');
       
-      print('Making PUT request to: ${uri.toString()}');
-      print('Request body: ${json.encode(body)}');
+      final response = await _client.post(
+        uri,
+        headers: await _getHeaders(),
+        body: jsonEncode(body),
+      ).timeout(const Duration(seconds: 30));
+      
+      developer.log('Response status: ${response.statusCode}');
+      developer.log('Response body: ${response.body}');
+      
+      return _handleResponse(response);
+    } catch (e) {
+      developer.log('POST Error: $e');
+      throw Exception('Network error: $e');
+    }
+  }
+
+  Future<dynamic> put(String endpoint, {required Map<String, dynamic> body}) async {
+    try {
+      developer.log('PUT $baseUrl$endpoint');
+      developer.log('Request body: $body');
       
       final response = await http.put(
-        uri,
-        headers: headers,
-        body: json.encode(body),
-      ).timeout(timeout);
-      
-      print('Response status: ${response.statusCode}');
-      print('Response body: ${response.body}');
+        Uri.parse('$baseUrl$endpoint'),
+        headers: await _getHeaders(),
+        body: jsonEncode(body),
+      ).timeout(const Duration(seconds: 30));
 
-      if (response.statusCode >= 200 && response.statusCode < 300) {
-        return json.decode(response.body);
+      developer.log('Response status: ${response.statusCode}');
+      developer.log('Response body: ${response.body}');
+
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
       } else {
-        throw HttpException('Request failed with status: ${response.statusCode}');
+        throw Exception('Failed to update data: ${response.statusCode}');
       }
     } catch (e) {
-      print('Error in PUT request: $e');
-      throw HttpException('Network error: $e');
+      developer.log('Network error: $e', error: e);
+      throw Exception('Network error: $e');
     }
   }
 
-  Future<dynamic> delete(String endpoint) async {
+  Future<void> delete(String endpoint) async {
     try {
-      final uri = Uri.parse('$baseUrl$endpoint');
-      final headers = await _getHeaders();
+      developer.log('DELETE $baseUrl$endpoint');
       
-      print('Making DELETE request to: ${uri.toString()}');
-      
-      final response = await http.delete(uri, headers: headers)
-          .timeout(timeout);
-      
-      print('Response status: ${response.statusCode}');
-      print('Response body: ${response.body}');
+      final response = await http.delete(
+        Uri.parse('$baseUrl$endpoint'),
+        headers: await _getHeaders(),
+      ).timeout(const Duration(seconds: 30));
 
-      if (response.statusCode >= 200 && response.statusCode < 300) {
-        return json.decode(response.body);
-      } else {
-        throw HttpException('Request failed with status: ${response.statusCode}');
+      developer.log('Response status: ${response.statusCode}');
+      developer.log('Response body: ${response.body}');
+
+      if (response.statusCode != 200 && response.statusCode != 204) {
+        throw Exception('Failed to delete data: ${response.statusCode}');
       }
     } catch (e) {
-      print('Error in DELETE request: $e');
-      throw HttpException('Network error: $e');
+      developer.log('Network error: $e', error: e);
+      throw Exception('Network error: $e');
+    }
+  }
+
+  dynamic _handleResponse(http.Response response) {
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    } else {
+      throw Exception('Failed to load data: ${response.statusCode}');
     }
   }
 } 

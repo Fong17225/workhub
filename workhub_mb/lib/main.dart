@@ -6,7 +6,9 @@ import 'package:workhub_mb/screens/login_screen.dart';
 import 'package:workhub_mb/screens/profile_screen.dart';
 import 'package:workhub_mb/services/auth_service.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await AuthService().init();
   runApp(const MyApp());
 }
 

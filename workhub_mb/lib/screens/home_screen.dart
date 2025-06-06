@@ -51,6 +51,15 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(
+        title: const Text('WorkHub'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.person),
+            onPressed: () => Navigator.pushNamed(context, '/profile'),
+          ),
+        ],
+      ),
       body: SingleChildScrollView(
         child: Column(
           children: [
