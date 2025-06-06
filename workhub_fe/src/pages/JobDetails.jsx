@@ -1,11 +1,24 @@
 import { useState, useEffect } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import axios from 'axios';
 
 const JobDetails = () => {
   const { id } = useParams();
-  const [isSaved, setIsSaved] = useState(false);
+  const queryClient = useQueryClient();
+
+  const { data: user } = useQuery({
+    queryKey: ['profile'],
+    queryFn: async () => {
+      try {
+        const response = await axios.get('http://localhost:8080/workhub/api/v1/me', { withCredentials: true });
+        return response.data;
+      } catch (error) {
+        return null;
+      }
+    },
+    staleTime: Infinity,
+  });
 
   const { data: job, isLoading, isError } = useQuery({
     queryKey: ['job', id],
@@ -15,6 +28,65 @@ const JobDetails = () => {
     },
     enabled: !!id,
   });
+
+  const { data: savedJobs, isLoading: isLoadingSaved, isError: isErrorSaved } = useQuery({
+    queryKey: ['savedJobs', user?.id],
+    queryFn: async () => {
+      const response = await axios.get(`http://localhost:8080/workhub/api/v1/saved-jobs?userId=${user.id}`);
+      return response.data;
+    },
+    enabled: !!user?.id,
+  });
+
+  const saveJobMutation = useMutation({
+    mutationFn: async (jobId) => {
+      const response = await axios.post('http://localhost:8080/workhub/api/v1/saved-jobs', null, {
+        params: { userId: user.id, jobId: jobId },
+        withCredentials: true,
+      });
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries(['savedJobs']);
+    },
+    onError: (error) => {
+      console.error('Error saving job:', error);
+      alert('Có lỗi xảy ra khi lưu việc làm.');
+    },
+  });
+
+  const unsaveJobMutation = useMutation({
+    mutationFn: async (jobId) => {
+      const response = await axios.delete('http://localhost:8080/workhub/api/v1/saved-jobs', {
+        params: { userId: user.id, jobId: jobId },
+        withCredentials: true,
+      });
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries(['savedJobs']);
+    },
+    onError: (error) => {
+      console.error('Error unsaving job:', error);
+      alert('Có lỗi xảy ra khi bỏ lưu việc làm.');
+    },
+  });
+
+  const isJobSaved = savedJobs?.some(savedJob => savedJob.jobId === parseInt(id));
+
+  const handleSaveUnsaveClick = () => {
+    if (!user) {
+      alert('Vui lòng đăng nhập để lưu việc làm.');
+      navigate('/login');
+      return;
+    }
+
+    if (isJobSaved) {
+      unsaveJobMutation.mutate(parseInt(id));
+    } else {
+      saveJobMutation.mutate(parseInt(id));
+    }
+  };
 
   const { data: similarJobs, isLoading: isLoadingSimilar, isError: isErrorSimilar } = useQuery({
     queryKey: ['similarJobs', job?.category?.id, job?.skills?.map(s => s.id)],
@@ -66,13 +138,22 @@ const JobDetails = () => {
                   </div>
                 </div>
                 <div className="flex items-center space-x-4">
-                  <button
-                    onClick={() => setIsSaved(!isSaved)}
-                    className="text-gray-600 hover:text-primary"
-                    aria-label={isSaved ? 'Bỏ lưu việc làm' : 'Lưu việc làm'}
-                  >
-                    {isSaved ? 'Đã lưu' : 'Lưu việc làm'}
-                  </button>
+                  {!isLoading && user && (
+                    <button
+                      onClick={handleSaveUnsaveClick}
+                      className="text-gray-600 hover:text-primary disabled:opacity-50 disabled:cursor-not-allowed"
+                      aria-label={isJobSaved ? 'Bỏ lưu việc làm' : 'Lưu việc làm'}
+                      disabled={saveJobMutation.isLoading || unsaveJobMutation.isLoading}
+                    >
+                      {saveJobMutation.isLoading || unsaveJobMutation.isLoading ? (
+                        'Đang xử lý...'
+                      ) : isJobSaved ? (
+                        'Đã lưu'
+                      ) : (
+                        'Lưu việc làm'
+                      )}
+                    </button>
+                  )}
                   <button className="text-gray-600 hover:text-primary" aria-label="Chia sẻ việc làm">
                     Chia sẻ
                   </button>
